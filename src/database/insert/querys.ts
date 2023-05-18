@@ -1,5 +1,4 @@
-import { Pool } from "pg";
-import { Kysely, PostgresDialect, Generated, ColumnType, Selectable, Insertable, Updateable } from "kysely";
+import { Kysely } from "kysely";
 
 export const insertPost = async (db: Kysely<Database>, post: PostDB) => {
     await db

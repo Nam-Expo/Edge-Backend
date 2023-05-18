@@ -1,25 +1,26 @@
 {
-  "name": "edge-backend",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "ed",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "db-init": "ts-node database/initialize/create.ts"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@vercel/edge": "^0.3.3",
+    "@neondatabase/serverless": "^0.4.5",
+    "@types/node": "20.2.1",
+    "@types/react": "18.2.6",
+    "@types/react-dom": "18.2.4",
+    "@vercel/edge": "^0.3.4",
+    "@vercel/edge-config": "^0.1.10",
+    "eslint": "8.40.0",
+    "eslint-config-next": "13.4.2",
     "kysely": "^0.24.2",
-    "kysely-postgres-js": "^1.1.0",
-    "pg": "^8.10.0",
-    "promptly": "^3.2.0",
-    "ts-node": "^10.9.1"
-  },
-  "devDependencies": {
-    "@types/pg": "^8.6.6",
-    "@types/promptly": "^3.0.2"
+    "next": "13.4.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "typescript": "5.0.4"
   }
 }

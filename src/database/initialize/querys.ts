@@ -1,4 +1,4 @@
-import { Client } from "pg";
+import { Client } from '@neondatabase/serverless';
 
 export const createOrganization = (client: Client) => {
     return client.query(`

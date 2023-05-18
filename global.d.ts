@@ -1,65 +1,116 @@
 import type {} from "";
 
 declare global {
-    type AccountType = "Organization" | "Server" | "User";
-    type UID = string;
-    type ID = string;
+	type AccountType = "Organization" | "Server" | "User";
+	type UID = string;
+	type ID = string;
 
-    type AccountInfo = {
-        uid: UID;
-        accountType: AccountType;
-        name: string;
-    };
+	type AccountInfo = {
+		uid: UID;
+		accountType: AccountType;
+	};
 
-    type OrganizationDB = {
-        uid: AccountInfo.uid;
-        description: string;
-    };
+	//-----------------------------------------
 
-    type ServerDB = {
-        uid: AccountInfo.uid;
-        organization: UID;
-    };
+	type OrganizationDB = {
+		uid: AccountInfo.uid;
+		name: string;
+		location: string;
+		description: string;
+	};
 
-    type UserDB = {
-        uid: AccountInfo.uid;
-        following: Array<UID>;
-    };
+	type GetOrganization = {
+		name: string;
+		location: string;
+		description: string;
+		profileImage: Blob;
+		backgroundImage: Blob;
+	};
 
-    type PostDB = {
-        owner: UID;
-        caption: string;
-        image: Blob;
-        likes: Array<UID>;
-        comments: Array<UID>;
-    };
+	//-----------------------------------------
 
-    type CommentDB = {
-        postKey: PostDB.key;
-        owner: UID;
-        text: string;
-        likes: Array<UID>;
-    };
+	type ServerDB = {
+		uid: AccountInfo.uid;
+		name: string;
+		organization: UID;
+	};
 
-    type ImageDB = {
-        uid: AccountInfo.UID;
-        profileImage: Blob;
-        backgroundImage: Blob;
-    };
+	type UserDB = {
+		uid: AccountInfo.uid;
+		name: string;
+		following: Array<UID>;
+	};
 
-    interface Database {
-        organization: OrganizationDB;
-        server: ServerDB;
-        user: UserDB;
-        post: PostDB;
-        comment: CommentDB;
-        image: ImageDB;
-    }
+	//-----------------------------------------
 
-    type Connection = {
-        user: string;
-        host: string;
-        password: string;
-        port: string;
-    };
+	type PostDB = {
+		key: string;
+		owner: UID;
+		caption: string;
+		image: Blob;
+		likes: Array<UID>;
+		comments: Array<UID>;
+	};
+
+	type GetPost = {
+		owner: UID;
+		caption: string;
+		image: Blob;
+		likes: Array<UID>;
+		comments: Array<UID>;
+	};
+
+	//-----------------------------------------
+
+	type CommentDB = {
+		key: string;
+		postKey: PostDB.key;
+		owner: UID;
+		text: string;
+		likes: Array<UID>;
+	};
+
+	type GetComment = {
+		owner: UID;
+		text: string;
+		likes: Array<UID>;
+	};
+
+	type PostComment = {
+		postKey: PostDB.key;
+		owner: UID;
+		text: string;
+	};
+
+	//-----------------------------------------
+
+	type FollowersDB = {
+		uid: AccountInfo.uid;
+		followingID: uid;
+	};
+
+	//-----------------------------------------
+
+	type ImageDB = {
+		uid: AccountInfo.UID;
+		profileImage: Blob;
+		backgroundImage: Blob;
+	};
+
+	interface Database {
+		followers: FollowersDB;
+		organization: OrganizationDB;
+		server: ServerDB;
+		user: UserDB;
+		post: PostDB;
+		comment: CommentDB;
+		image: ImageDB;
+	}
+
+	type Connection = {
+		user: string;
+		host: string;
+		password: string;
+		port: string;
+	};
 }

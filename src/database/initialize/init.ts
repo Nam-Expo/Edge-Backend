@@ -1,4 +1,4 @@
-import { Pool, PoolConfig } from "pg";
+import { Pool } from '@neondatabase/serverless';
 import { Kysely, PostgresDialect } from "kysely";
 
 export default function Init(connection: Connection) {
