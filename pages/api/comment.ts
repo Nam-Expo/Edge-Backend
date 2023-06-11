@@ -1,34 +1,48 @@
 import type { RequestContext } from "@vercel/edge";
 import handler from "../../src/handling/edgeFunctionHandler";
-import { postBody, getParams } from "../../src/handling/validations/Comment";
-import { insertComment } from "../../src/database/insert/querys";
-import { fetchComment } from "@/src/database/fetch/fetch";
+import { postBody, getParams } from "../../src/handling/validations/Post";
 import { Kysely } from "kysely";
 
-export default function comment(request: Request, context: RequestContext) {
-	return handler({ postBodyValidator: postBody, paramValidator: getParams, db: true })({
-		request,
-		get: async (params, db) => {
-			const postkey = params.get("postKey");
-			let comment = await fetchComment(db as Kysely<Database>, postkey as string);
+export const config = {
+	runtime: "edge",
+};
 
-			return new Response(JSON.stringify(comment), {
+export default function user(request: Request, context: RequestContext) {
+	let params = new URL(request.url).searchParams;
+
+	return handler<Posts>({
+		postBodyValidator: postBody,
+		postParamValidator: getParams,
+		db: true,
+	})({
+		request,
+		get: async (db) => {
+			const postKey = params.get("postKey") as string;
+
+			let user = await (db as Kysely<Database>)
+				.selectFrom("Posts")
+				.selectAll()
+				.where("Posts.key", "=", parseInt(postKey))
+				.execute();
+
+			return new Response(JSON.stringify(user), {
 				status: 200,
 			});
 		},
-		post: async (body: PostComment, db) => {
-			try {
-				await insertComment(db as Kysely<Database>, {
-					key: crypto.randomUUID(),
-					...body,
+		post: async (getBody, db) => {
+			let body = await getBody();
+
+			await (db as Kysely<Database>)
+				.insertInto("Posts")
+				.values({
+					owner: body.owner,
+					caption: body.caption,
+					image: body.image,
 					likes: [],
-				});
-				return new Response(`OK`);
-			} catch (error) {
-				return new Response(`error`, {
-					status: 500,
-				});
-			}
+					comments: [],
+				})
+				.execute();
+			return new Response(`OK`);
 		},
 	});
 }

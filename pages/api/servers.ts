@@ -1,6 +1,6 @@
 import type { RequestContext } from "@vercel/edge";
 import handler from "../../src/handling/edgeFunctionHandler";
-import { postBody, getParams } from "../../src/handling/validations/User";
+import { postBody, getParams } from "../../src/handling/validations/Servers";
 import { Kysely } from "kysely";
 
 export const config = {
@@ -10,30 +10,32 @@ export const config = {
 export default function user(request: Request, context: RequestContext) {
 	let params = new URL(request.url).searchParams;
 
-	return handler<Users>({
+	return handler<Servers>({
 		postBodyValidator: postBody,
-		getParamValidator: getParams,
+		postParamValidator: getParams,
 		db: true,
 	})({
 		request,
 		get: async (db) => {
-			const userId = params.get("userId");
+			const serverId = params.get("serverId");
+
 			let user = await (db as Kysely<Database>)
-				.selectFrom("Users")
+				.selectFrom("Servers")
 				.selectAll()
-				.where("Users.id", "=", userId)
+				.where("Servers.id", "=", serverId)
 				.execute();
+
 			return new Response(JSON.stringify(user), {
 				status: 200,
 			});
 		},
 		post: async (body, db) => {
 			await (db as Kysely<Database>)
-				.insertInto("Users")
+				.insertInto("Servers")
 				.values({
 					id: body.id,
 					name: body.name,
-					following: [],
+					organization: body.organization,
 					backgroundImage: body.backgroundImage,
 					profileImage: body.profileImage,
 				})

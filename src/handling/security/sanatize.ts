@@ -1,5 +1,5 @@
 const sanatize = (string: string) => {
-	return typeof string === "string";
+	return true;
 };
 
 export default function SQLSanatize(string: string) {

@@ -1,7 +1,21 @@
 import z, { object } from "zod";
 import SQLSanatize from "./security/sanatize";
-import Init from "../database/initialize/init";
+import { getPool, init } from "../database/init";
 import { Kysely } from "kysely";
+import { Pool } from "@neondatabase/serverless";
+
+export async function* streamGenerator(
+	reader: ReadableStreamDefaultReader<Uint8Array>
+) {
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) {
+			break;
+		} else {
+			yield value;
+		}
+	}
+}
 
 const sanatizeObject = (object: Object) => {
 	for (const value of Object.values(object)) {
@@ -13,31 +27,18 @@ const sanatizeObject = (object: Object) => {
 	}
 };
 
-const getDb = (request: Request) => {
-	const region = request.headers.get("x-vercel-ip-city");
-    
-	const ENV = process.env as NodeJS.ProcessEnv;
-
-	if (ENV) {
-		return Init({
-			user: ENV.DB_USER,
-			host: ENV.DB_HOST,
-			password: ENV.DB_PASSWORD,
-			port: DB_PORT,
-		});
-	} else {
-		throw Error("500");
-	}
-};
-
-export default function handler({
+export default function handler<BodyType>({
 	postBodyValidator,
-	paramValidator,
+	postParamValidator,
+	getParamValidator,
 	db,
+	pool,
 }: {
-	postBodyValidator: z.ZodObject<any>;
-	paramValidator: z.ZodObject<any>;
-	db: boolean;
+	postBodyValidator?: z.ZodObject<any>;
+	getParamValidator?: z.ZodObject<any>;
+	postParamValidator?: z.ZodObject<any>;
+	db?: boolean;
+	pool?: boolean;
 }) {
 	return async ({
 		request,
@@ -45,62 +46,92 @@ export default function handler({
 		get,
 	}: {
 		request: Request;
-		post: (body: any, db?: Kysely<Database>) => Promise<Response>;
-		get: (params: URLSearchParams, db?: Kysely<Database>) => Promise<Response>;
+		post: (
+			body: BodyType,
+			db?: Kysely<Database> | Pool
+		) => Promise<Response>;
+		get: (db?: Kysely<Database> | Pool) => Promise<Response>;
 	}) => {
 		if (request.method === "POST") {
 			let body = await request.json();
+			let params = new URL(request.url).searchParams;
 
-			try {
-				postBodyValidator.parse(body);
-			} catch {
-				return new Response("bad body", {
-					status: 500,
-				});
+			if (postParamValidator) {
+				try {
+					postParamValidator.parse(Object.fromEntries(params));
+				} catch {
+					return new Response("bad params", {
+						status: 500,
+					});
+				}
 			}
 
-			try {
-				sanatizeObject(body);
-			} catch {
-				return new Response("text error", {
-					status: 500,
-				});
-			}
+			if (postBodyValidator) {
+				try {
+					postBodyValidator.parse(body);
+				} catch {
+					return new Response("bad body", {
+						status: 500,
+					});
+				}
 
+				try {
+					sanatizeObject(body);
+				} catch {
+					return new Response("text error", {
+						status: 500,
+					});
+				}
+			}
 			let database;
 
 			if (db) {
-				database = getDb(request);
+				database = pool ? await getPool() : await init();
 			}
-
-			return await post(body, database);
+			try {
+				return await post(body as BodyType, database);
+			} catch (error) {
+				return new Response(
+					"bad POST method" + (error as Error).toString(),
+					{
+						status: 500,
+					}
+				);
+			}
 		}
 		if (request.method === "GET") {
 			const params = new URL(request.url).searchParams;
 
-			try {
-				paramValidator.parse(Object.fromEntries(params));
-			} catch {
-				return new Response("bad params", {
-					status: 500,
-				});
-			}
+			if (getParamValidator) {
+				try {
+					getParamValidator.parse(Object.fromEntries(params));
+				} catch {
+					return new Response("bad params", {
+						status: 500,
+					});
+				}
 
-			try {
-				sanatizeObject(Object.fromEntries(params));
-			} catch {
-				return new Response("text error", {
-					status: 500,
-				});
+				try {
+					sanatizeObject(Object.fromEntries(params));
+				} catch {
+					return new Response("text error", {
+						status: 500,
+					});
+				}
 			}
 
 			let database;
 
 			if (db) {
-				database = getDb(request);
+				database = pool ? await getPool() : await init();
 			}
-
-			return await get(params, database);
+			try {
+				return await get(database);
+			} catch {
+				return new Response("bad GET method", {
+					status: 500,
+				});
+			}
 		} else {
 			return new Response("bad request method", {
 				status: 500,

@@ -1,6 +1,6 @@
 import type { RequestContext } from "@vercel/edge";
 import handler from "../../src/handling/edgeFunctionHandler";
-import { postBody, getParams } from "../../src/handling/validations/User";
+import { postBody, getParams } from "../../src/handling/validations/Post";
 import { Kysely } from "kysely";
 
 export const config = {
@@ -10,32 +10,34 @@ export const config = {
 export default function user(request: Request, context: RequestContext) {
 	let params = new URL(request.url).searchParams;
 
-	return handler<Users>({
+	return handler<Posts>({
 		postBodyValidator: postBody,
-		getParamValidator: getParams,
+		postParamValidator: getParams,
 		db: true,
 	})({
 		request,
 		get: async (db) => {
-			const userId = params.get("userId");
+			const postKey = params.get("postKey") as string;
+
 			let user = await (db as Kysely<Database>)
-				.selectFrom("Users")
+				.selectFrom("Posts")
 				.selectAll()
-				.where("Users.id", "=", userId)
+				.where("Posts.key", "=", parseInt(postKey))
 				.execute();
+
 			return new Response(JSON.stringify(user), {
 				status: 200,
 			});
 		},
 		post: async (body, db) => {
 			await (db as Kysely<Database>)
-				.insertInto("Users")
+				.insertInto("Posts")
 				.values({
-					id: body.id,
-					name: body.name,
-					following: [],
-					backgroundImage: body.backgroundImage,
-					profileImage: body.profileImage,
+					owner: body.owner,
+					caption: body.caption,
+					image: body.image,
+					likes: [],
+					comments: [],
 				})
 				.execute();
 			return new Response(`OK`);
